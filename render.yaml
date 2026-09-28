@@ -1,0 +1,17 @@
+# Configuración para Render (render.com).
+# DATABASE_URL no va acá: se carga a mano en el panel de Render, porque
+# contiene la contraseña de la base de datos.
+services:
+  - type: web
+    name: recorrido-perioperatorio
+    runtime: node
+    plan: free
+    region: ohio
+    buildCommand: npm install --omit=dev
+    startCommand: node server.js
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
