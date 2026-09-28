@@ -131,6 +131,27 @@
   .greeting{ display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px; font-size: 15px; flex-wrap:wrap; gap:10px; }
   .greeting .name{ font-weight:600; }
   .notify-note{ font-size: 12.5px; color: var(--ink-soft); margin: 0 0 18px; font-style:italic; }
+  [hidden]{ display:none !important; }
+  .install-card{
+    display:flex; align-items:center; justify-content:space-between; gap:14px 20px; flex-wrap:wrap;
+    background: var(--teal-soft); border:1px solid #BFE3DD; border-radius: var(--radius-m);
+    padding: 16px 20px; margin-bottom: 22px;
+  }
+  .install-text{ display:flex; flex-direction:column; gap:3px; flex: 1 1 240px; }
+  .install-text strong{ font-family:'Quicksand', sans-serif; font-size: 16px; color: var(--green-dark); }
+  .install-text span{ font-size: 14px; color: var(--ink-soft); line-height:1.45; }
+  .install-actions{ display:flex; align-items:center; gap:16px; }
+  .install-steps{ list-style:none; padding:0 !important; margin: 8px 0 0 !important; counter-reset: paso; }
+  .install-steps li{
+    counter-increment: paso; display:flex; gap:12px; align-items:flex-start;
+    padding: 12px 0; border-bottom:1px solid var(--sage-line);
+  }
+  .install-steps li:last-child{ border-bottom:none; }
+  .install-steps li::before{
+    content: counter(paso); flex:0 0 26px; height:26px; border-radius:50%; background: var(--green); color:#fff;
+    font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center; margin-top:1px;
+  }
+  .install-steps svg{ width:20px; height:20px; vertical-align:-4px; color: var(--blue); margin: 0 2px; }
   .btn-link{ background:none; border:none; color: var(--green); font-size: 13.5px; cursor:pointer; text-decoration: underline; padding:0; font-family:'Nunito',sans-serif; }
 
   /* ---------- Today panels ---------- */
@@ -295,6 +316,17 @@
       </div>
     </div>
     <p class="notify-note" id="notifyNote" style="display:none;"></p>
+
+    <div class="install-card" id="installCard" hidden>
+      <div class="install-text">
+        <strong>Tené tu recorrido a mano</strong>
+        <span>Instalalo en tu celular como una app, con su ícono en la pantalla de inicio.</span>
+      </div>
+      <div class="install-actions">
+        <button class="btn-primary" onclick="installApp()">Instalar en mi celular</button>
+        <button class="btn-link" onclick="dismissInstall()">Ahora no</button>
+      </div>
+    </div>
 
     <div class="timeline-card">
       <div class="timeline-top">
@@ -928,6 +960,82 @@ async function init(){
   if(!surgeryDate){ renderMilestones(); }
 }
 init();
+
+/* ---- PWA: botón "Instalar en mi celular" ---- */
+// Android/Chrome permite disparar la instalación (beforeinstallprompt).
+// iPhone no lo permite: se muestran los pasos para hacerlo desde Safari.
+const UA = navigator.userAgent;
+const IS_IOS = /iPhone|iPad|iPod/.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const IS_ANDROID = /Android/.test(UA);
+const IS_STANDALONE = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+let installPrompt = null;
+
+function installDismissedRecently(){
+  try{
+    const t = parseInt(localStorage.getItem('installDismissedAt') || '0', 10);
+    return Date.now() - t < 7 * 86400000;
+  } catch(e){ return false; }
+}
+function showInstallCard(){
+  if(IS_STANDALONE || installDismissedRecently()) return;
+  document.getElementById('installCard').hidden = false;
+}
+function hideInstallCard(){ document.getElementById('installCard').hidden = true; }
+function dismissInstall(){
+  try{ localStorage.setItem('installDismissedAt', String(Date.now())); } catch(e){}
+  hideInstallCard();
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  installPrompt = e;
+  showInstallCard();
+});
+window.addEventListener('appinstalled', () => { installPrompt = null; hideInstallCard(); });
+if(IS_IOS || IS_ANDROID) showInstallCard();
+
+const ICON_SHARE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Compartir"><path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg>';
+const ICON_ADD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8v8M8 12h8"/></svg>';
+const ICON_DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-label="menú"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>';
+
+function showInstallSteps(html){
+  document.getElementById('modalBody').innerHTML =
+    `<button class="modal-close" onclick="closeModal()">&times;</button>` + html;
+  document.getElementById('overlay').classList.add('open');
+}
+
+async function installApp(){
+  if(installPrompt){
+    installPrompt.prompt();
+    const choice = await installPrompt.userChoice;
+    installPrompt = null;
+    if(choice.outcome === 'accepted') hideInstallCard();
+    return;
+  }
+  if(IS_IOS){
+    showInstallSteps(`
+      <div class="meta">iPhone · iPad</div>
+      <h3>Instalá la app en 3 pasos</h3>
+      <ol class="install-steps">
+        <li><div>Tocá el botón <b>Compartir</b> ${ICON_SHARE} de Safari, en la barra de abajo. Si no lo ves, tocá primero <b>···</b></div></li>
+        <li><div>Deslizá hacia abajo y elegí <b>Agregar a pantalla de inicio</b> ${ICON_ADD}</div></li>
+        <li><div>Tocá <b>Agregar</b>, arriba a la derecha. Listo: vas a ver el ícono en tu pantalla de inicio.</div></li>
+      </ol>
+      <div class="note">Si abriste este link desde WhatsApp, Instagram o un mail, primero tocá <b>Abrir en Safari</b>.</div>
+      <div class="tip">La primera vez que abras la app desde el ícono, cargá de nuevo tu nombre y la fecha de tu cirugía.</div>
+    `);
+    return;
+  }
+  showInstallSteps(`
+    <div class="meta">Android</div>
+    <h3>Instalá la app en 2 pasos</h3>
+    <ol class="install-steps">
+      <li><div>Tocá el menú ${ICON_DOTS} de Chrome, arriba a la derecha.</div></li>
+      <li><div>Elegí <b>Instalar app</b> o <b>Agregar a la pantalla principal</b>, y confirmá.</div></li>
+    </ol>
+    <div class="note">Si abriste este link desde WhatsApp, Instagram o un mail, primero abrilo en <b>Chrome</b>.</div>
+  `);
+}
 
 /* ---- PWA: service worker para que se pueda instalar como app ---- */
 if('serviceWorker' in navigator){
