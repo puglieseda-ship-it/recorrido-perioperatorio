@@ -144,6 +144,15 @@
   .welcome-logos .divider{ width:1px; height:28px; background: var(--sage-line); }
   .welcome-title{ font-size: 40px; font-weight: 600; color: var(--green-dark); margin: 0 0 10px; line-height:1.1; }
   .welcome-sub{ color: var(--ink-soft); font-size: 15.5px; line-height: 1.55; margin: 0 0 26px; }
+  .welcome-install{ margin: -8px 0 24px; padding-bottom: 22px; border-bottom: 1px solid var(--sage-line); }
+  .welcome-install p{ font-size: 13px; color: var(--ink-soft); margin: 8px 0 0; line-height: 1.45; }
+  .btn-outline{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    background: var(--teal-soft); color: var(--green-dark); border: 1px solid #BFE3DD; border-radius: var(--radius-s);
+    font-family:'Nunito', sans-serif; font-weight: 600; cursor:pointer;
+  }
+  .btn-outline:hover{ border-color: var(--green); }
+  .btn-outline svg{ width: 20px; height: 20px; }
   .welcome-form{ display:flex; flex-direction:column; gap:14px; text-align:left; }
   .welcome-form .field{ flex: none; }
   .welcome-form .field input{ font-size: 16px; padding: 12px 14px; } /* 16px evita el zoom automático en iPhone */
@@ -311,6 +320,14 @@
     </div>
     <h1 class="welcome-title">Mi Cirugía</h1>
     <p class="welcome-sub">Tu acompañamiento día a día, antes y después de la cirugía: qué comer, qué preparar y qué tener en cuenta en cada momento.</p>
+
+    <div class="welcome-install" id="welcomeInstall" hidden>
+      <button class="btn-outline btn-block" onclick="installApp()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M12 7v7M9 11l3 3 3-3"/></svg>
+        Instalar en mi celular
+      </button>
+      <p>Te recomendamos instalarla primero y cargar tus datos desde la app.</p>
+    </div>
 
     <form class="welcome-form" onsubmit="event.preventDefault(); startJourney();">
       <div class="field">
@@ -1057,10 +1074,13 @@ function installDismissedRecently(){
   } catch(e){ return false; }
 }
 function showInstallCard(){
-  if(IS_STANDALONE || installDismissedRecently()) return;
-  document.getElementById('installCard').hidden = false;
+  if(IS_STANDALONE) return;
+  // En la pantalla de inicio siempre se ofrece; el recuadro del recorrido respeta "Ahora no".
+  document.getElementById('welcomeInstall').hidden = false;
+  if(!installDismissedRecently()) document.getElementById('installCard').hidden = false;
 }
 function hideInstallCard(){ document.getElementById('installCard').hidden = true; }
+function hideAllInstallPrompts(){ hideInstallCard(); document.getElementById('welcomeInstall').hidden = true; }
 function dismissInstall(){
   try{ localStorage.setItem('installDismissedAt', String(Date.now())); } catch(e){}
   hideInstallCard();
@@ -1071,7 +1091,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
   installPrompt = e;
   showInstallCard();
 });
-window.addEventListener('appinstalled', () => { installPrompt = null; hideInstallCard(); });
+window.addEventListener('appinstalled', () => { installPrompt = null; hideAllInstallPrompts(); });
 if(IS_IOS || IS_ANDROID) showInstallCard();
 
 const ICON_SHARE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Compartir"><path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg>';
@@ -1089,7 +1109,7 @@ async function installApp(){
     installPrompt.prompt();
     const choice = await installPrompt.userChoice;
     installPrompt = null;
-    if(choice.outcome === 'accepted') hideInstallCard();
+    if(choice.outcome === 'accepted') hideAllInstallPrompts();
     return;
   }
   if(IS_IOS){
@@ -1102,7 +1122,7 @@ async function installApp(){
         <li><div>Tocá <b>Agregar</b>, arriba a la derecha. Listo: vas a ver el ícono en tu pantalla de inicio.</div></li>
       </ol>
       <div class="note">Si abriste este link desde WhatsApp, Instagram o un mail, primero tocá <b>Abrir en Safari</b>.</div>
-      <div class="tip">La primera vez que abras la app desde el ícono, cargá de nuevo tu nombre y la fecha de tu cirugía.</div>
+      <div class="tip">Después abrí la app desde el nuevo ícono y cargá ahí tu nombre y la fecha de tu cirugía: lo que cargues en Safari no pasa a la app.</div>
     `);
     return;
   }
