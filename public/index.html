@@ -109,12 +109,7 @@
   }
   .surgery-flag::after{ content:""; display:block; width:1px; height:18px; background: var(--clay); margin: 2px auto 0; }
 
-  /* ---------- Onboarding ---------- */
-  .onboard{
-    background: var(--paper-raised); border:1px solid var(--sage-line); border-radius: var(--radius-m);
-    padding: 26px 28px; margin-bottom: 22px; display:flex; gap:18px; align-items:flex-end; flex-wrap:wrap;
-  }
-  .onboard.done{ display:none; }
+  /* ---------- Formulario ---------- */
   .field{ display:flex; flex-direction:column; gap:6px; flex: 1 1 180px; }
   .field label{ font-size: 12.5px; color: var(--ink-soft); }
   .field input{
@@ -132,6 +127,34 @@
   .greeting .name{ font-weight:600; }
   .notify-note{ font-size: 12.5px; color: var(--ink-soft); margin: 0 0 18px; font-style:italic; }
   [hidden]{ display:none !important; }
+
+  /* ---------- Pantalla de inicio ---------- */
+  .welcome{
+    min-height: 100vh; min-height: 100dvh; display:flex; align-items:center; justify-content:center;
+    padding: 32px 16px;
+    background: radial-gradient(circle at 85% 8%, var(--teal-soft), transparent 55%), var(--paper);
+  }
+  .welcome-card{
+    width:100%; max-width: 440px; background: var(--paper-raised); border:1px solid var(--sage-line);
+    border-radius: 24px; padding: 36px 28px 26px; text-align:center; box-shadow: 0 12px 32px rgba(35,133,122,0.08);
+  }
+  .welcome-logos{ display:flex; align-items:center; justify-content:center; gap:16px; margin-bottom: 30px; }
+  .welcome-logos .logo-serendipity{ height: 32px; width:auto; }
+  .welcome-logos .logo-diego{ height: 36px; width:auto; }
+  .welcome-logos .divider{ width:1px; height:28px; background: var(--sage-line); }
+  .welcome-title{ font-size: 40px; font-weight: 600; color: var(--green-dark); margin: 0 0 10px; line-height:1.1; }
+  .welcome-sub{ color: var(--ink-soft); font-size: 15.5px; line-height: 1.55; margin: 0 0 26px; }
+  .welcome-form{ display:flex; flex-direction:column; gap:14px; text-align:left; }
+  .welcome-form .field{ flex: none; }
+  .welcome-form .field input{ font-size: 16px; padding: 12px 14px; } /* 16px evita el zoom automático en iPhone */
+  .btn-block{ width:100%; padding: 14px 22px; font-size: 16px; margin-top: 4px; }
+  .btn-primary:disabled{ opacity: .65; cursor: wait; }
+  .welcome-error{ color: var(--clay); font-size: 13.5px; line-height:1.45; margin: 0; }
+  .welcome-skip{ margin-top: 18px; }
+  .welcome-foot{ font-size: 12px; color: var(--ink-soft); margin: 24px 0 0; line-height: 1.55; }
+  .explore-note{
+    font-size: 14px; color: var(--ink-soft); margin-bottom: 18px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+  }
   .install-card{
     display:flex; align-items:center; justify-content:space-between; gap:14px 20px; flex-wrap:wrap;
     background: var(--teal-soft); border:1px solid #BFE3DD; border-radius: var(--radius-m);
@@ -279,12 +302,40 @@
 </head>
 <body>
 
-<div class="wrap">
+<section class="welcome" id="welcome" hidden>
+  <div class="welcome-card">
+    <div class="welcome-logos">
+      <img class="logo-serendipity" src="/brand/logo-serendipity.png" alt="Serendipity">
+      <div class="divider"></div>
+      <img class="logo-diego" src="/brand/logo-diego-pugliese.png" alt="Diego Pugliese — Cirujano Plástico">
+    </div>
+    <h1 class="welcome-title">Mi Cirugía</h1>
+    <p class="welcome-sub">Tu acompañamiento día a día, antes y después de la cirugía: qué comer, qué preparar y qué tener en cuenta en cada momento.</p>
+
+    <form class="welcome-form" onsubmit="event.preventDefault(); startJourney();">
+      <div class="field">
+        <label for="inpName">Nombre y apellido</label>
+        <input type="text" id="inpName" placeholder="Ej: María Gómez" autocomplete="name" maxlength="100">
+      </div>
+      <div class="field">
+        <label for="inpDate">Fecha de tu cirugía</label>
+        <input type="date" id="inpDate" required>
+      </div>
+      <p class="welcome-error" id="welcomeError" hidden></p>
+      <button type="submit" class="btn-primary btn-block" id="startBtn">Comenzar mi recorrido</button>
+    </form>
+    <button class="btn-link welcome-skip" id="exploreBtn" onclick="exploreWithoutData()">Solo quiero explorar</button>
+
+    <p class="welcome-foot">Recomendaciones de Diego Pugliese, cirujano plástico (MN 148156).<br>Recetas de Valeria Atán, nutricionista (MP322).</p>
+  </div>
+</section>
+
+<div class="wrap" id="mainApp" hidden>
   <div class="topbar">
     <div class="brand">
-      <img class="logo-serendipity" src="/brand/logo-serendipity.png" alt="Serendipity" alt="Serendipity">
+      <img class="logo-serendipity" src="/brand/logo-serendipity.png" alt="Serendipity">
       <div class="divider"></div>
-      <img class="logo-diego" src="/brand/logo-diego-pugliese.png" alt="Diego Pugliese" alt="Diego Pugliese — Cirujano Plástico">
+      <img class="logo-diego" src="/brand/logo-diego-pugliese.png" alt="Diego Pugliese — Cirujano Plástico">
       <span class="tagline">recorrido nutricional</span>
     </div>
     <nav>
@@ -294,18 +345,11 @@
 
   <div class="hero">
     <h1>Movete por tu recorrido</h1>
-    <p class="lede">Cargá tu fecha de cirugía y te acompañamos día a día — o deslizá el punto para explorar cualquier otro momento.</p>
+    <p class="lede">Te mostramos qué hacer hoy. Deslizá el punto para ver cualquier otro momento de tu recorrido.</p>
 
-    <div class="onboard" id="onboard">
-      <div class="field">
-        <label for="inpName">Nombre y apellido</label>
-        <input type="text" id="inpName" placeholder="Ej: María Gómez">
-      </div>
-      <div class="field">
-        <label for="inpDate">Fecha de tu cirugía</label>
-        <input type="date" id="inpDate">
-      </div>
-      <button class="btn-primary" onclick="startJourney()">Comenzar mi recorrido</button>
+    <div class="explore-note" id="exploreNote" hidden>
+      Estás explorando sin tus datos.
+      <button class="btn-link" onclick="showWelcome()">Cargar mi fecha de cirugía</button>
     </div>
 
     <div class="greeting" id="greeting" style="display:none;">
@@ -684,11 +728,40 @@ let surgeryDate = null;
 let pacienteId = null;
 let patientName = '';
 
+function showWelcome(){
+  // Si ya tiene datos, el formulario aparece completo para poder corregirlos.
+  if(surgeryDate){
+    document.getElementById('inpName').value = patientName;
+    document.getElementById('inpDate').value = icsDateStr(surgeryDate).replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3');
+  }
+  document.getElementById('exploreBtn').textContent = surgeryDate ? 'Volver sin cambiar nada' : 'Solo quiero explorar';
+  document.getElementById('welcomeError').hidden = true;
+  document.getElementById('welcome').hidden = false;
+  document.getElementById('mainApp').hidden = true;
+  window.scrollTo(0, 0);
+}
+
+function showMain(){
+  document.getElementById('exploreNote').hidden = !!surgeryDate;
+  document.getElementById('welcome').hidden = true;
+  document.getElementById('mainApp').hidden = false;
+  window.scrollTo(0, 0);
+}
+
+function exploreWithoutData(){ showMain(); }
+
 async function startJourney(){
   const name = document.getElementById('inpName').value.trim();
   const dateVal = document.getElementById('inpDate').value;
   if(!dateVal){ document.getElementById('inpDate').focus(); return; }
-  surgeryDate = new Date(dateVal + 'T00:00:00');
+
+  const btn = document.getElementById('startBtn');
+  const err = document.getElementById('welcomeError');
+  err.hidden = true;
+  btn.disabled = true;
+  btn.textContent = 'Guardando…';
+  // En el plan gratuito, el servidor puede tardar hasta un minuto en "despertar".
+  const slowTimer = setTimeout(() => { btn.textContent = 'Guardando… puede tardar un minuto'; }, 5000);
 
   try{
     // Si ya tiene un recorrido guardado, se actualiza el mismo en vez de crear otro.
@@ -708,18 +781,26 @@ async function startJourney(){
     const data = await res.json();
     if(!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
     pacienteId = data.id;
-    localStorage.setItem('pacienteId', pacienteId);
+    try{ localStorage.setItem('pacienteId', pacienteId); } catch(e){}
     Object.assign(checkState, data.checklist || {});
   } catch(e){
-    console.error('No se pudo conectar con el servidor — el recorrido no se va a guardar entre visitas.', e);
+    console.error('No se pudo guardar el recorrido', e);
+    err.textContent = 'No pudimos guardar tus datos. Revisá tu conexión a internet e intentá de nuevo.';
+    err.hidden = false;
+    return;
+  } finally {
+    clearTimeout(slowTimer);
+    btn.disabled = false;
+    btn.textContent = 'Comenzar mi recorrido';
   }
 
+  surgeryDate = new Date(dateVal + 'T00:00:00');
   applyPatientView(name, surgeryDate);
+  showMain();
 }
 
 function applyPatientView(name, sdate){
   patientName = name || '';
-  document.getElementById('onboard').classList.add('done');
   const greeting = document.getElementById('greeting');
   greeting.style.display = 'flex';
   document.getElementById('greetName').textContent = name || 'hola';
@@ -737,15 +818,7 @@ function applyPatientView(name, sdate){
 function resetOnboard(){
   // Se conserva pacienteId: al volver a "Comenzar" se actualiza el mismo recorrido
   // (y su checklist) en lugar de crear uno nuevo.
-  if(surgeryDate){
-    document.getElementById('inpName').value = patientName;
-    document.getElementById('inpDate').value = icsDateStr(surgeryDate).replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3');
-  }
-  surgeryDate = null;
-  document.getElementById('onboard').classList.remove('done');
-  document.getElementById('greeting').style.display = 'none';
-  renderMilestones();
-  renderChecklist();
+  showWelcome();
 }
 
 function fmtDate(d){ return d.toLocaleDateString('es-AR', { weekday:'short', day:'numeric', month:'short' }); }
@@ -937,8 +1010,11 @@ function scrollToRecetario(){
 }
 
 async function init(){
-  const savedId = localStorage.getItem('pacienteId');
+  let savedId = null;
+  try{ savedId = localStorage.getItem('pacienteId'); } catch(e){}
   if(savedId){
+    // Ya cargó sus datos antes: va directo a su recorrido.
+    showMain();
     try{
       const res = await fetch('/api/pacientes/' + savedId);
       if(res.ok){
@@ -947,10 +1023,14 @@ async function init(){
         surgeryDate = new Date(data.fecha_cirugia + 'T00:00:00');
         Object.assign(checkState, data.checklist || {});
         applyPatientView(data.nombre, surgeryDate);
+        showMain();
       } else {
         localStorage.removeItem('pacienteId');
+        showWelcome();
       }
     } catch(e){ console.error('No se pudo recuperar el recorrido guardado', e); }
+  } else {
+    showWelcome();
   }
   updateSurgeryFlagPosition();
   if(!surgeryDate){ renderToday(parseInt(slider.value)); }
